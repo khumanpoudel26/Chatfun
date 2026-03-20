@@ -10,3 +10,20 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum active_stat {
+  Online
+  Offline
+}
+
+model User {
+  id              Int         @unique @default(autoincrement())
+  fullname        String
+  username        String      @unique
+  email           String      @unique
+  password        String
+  profile_picture String?
+  bio             String      @default("no bio yet")
+  active_status   active_stat @default(Offline)
+  email_verified  Boolean     @default(false)
+}
