@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
 import { registerValidator } from "../validators/user.validators";
-import { LoginUser, RegisterUser } from "../services/user.services";
+import { GetMe, LoginUser, RegisterUser } from "../services/user.services";
 import apiResponse from "../utils/apiResponse";
 import apiError from "../utils/apiError";
+import { ReqUser } from "../types/user.types";
 
 export const Register = asyncHandler(async (
     req: Request,
@@ -44,3 +45,26 @@ export const Login = asyncHandler(async (
     return apiResponse(res, 200, "Logged in successfully", result);
 });
 
+
+
+export const Logout = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    res.clearCookie("login_token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "prod",
+        sameSite: "strict"
+    });
+    return apiResponse(res, 200, "Logged out successfully");
+});
+
+
+export const Me = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const user = req.user as ReqUser
+    const result = await GetMe(user.id);
+    return apiResponse(res, 200, "User data fetched successfully", result);
+});

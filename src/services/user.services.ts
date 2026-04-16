@@ -30,7 +30,7 @@ export const RegisterUser = async (
             throw new apiError(400, "Username already exists");
         }
     }
-    
+
     const hash = await GenerateHash(password);
 
     let url: string | null = null;
@@ -57,10 +57,10 @@ export const RegisterUser = async (
 
 
 export const LoginUser = async (
-    email: string, 
+    email: string,
     password: string
 ) => {
-    if(!email || !password){
+    if (!email || !password) {
         throw new apiError(400, "Email or password should not be empty");
     }
 
@@ -70,13 +70,13 @@ export const LoginUser = async (
         }
     });
 
-    if(!user){
+    if (!user) {
         throw new apiError(400, "Invalid email or password");
     }
 
     const validPassword = await CompareHash(password, user.password);
 
-    if(!validPassword){
+    if (!validPassword) {
         throw new apiError(400, "Invalid email or password")
     }
 
@@ -97,4 +97,27 @@ export const LoginUser = async (
         login_token: loginToken
     }
 
+}
+
+
+export const GetMe = async (user_id: number) => {
+    const user = await prisma.user.findUnique({
+        where: {
+            id: user_id
+        },
+        select: {
+            id: true,
+            fullname: true,
+            username: true,
+            email: true,
+            profile_picture: true,
+            bio: true,
+            email_verified: true,
+            active_status: true,
+            created_at: true,
+            updated_at: true
+        }
+    });
+
+    return user;
 }

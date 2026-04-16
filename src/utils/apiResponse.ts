@@ -1,5 +1,5 @@
 import { Response } from "express";
-const apiResponse = <t>(res: Response, status: number, message: string, body?: Array<t> | object) => {
+const apiResponse = <t>(res: Response, status: number, message: string, body?: Array<t> | object  | null) => {
     return res.status(status).json({
         success: true,
         message: message,
