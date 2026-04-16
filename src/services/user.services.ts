@@ -3,6 +3,7 @@ import { uploadCloud } from "../utils/uploadCloud";
 import { CompareHash, GenerateHash } from "../utils/hash";
 import apiError from "../utils/apiError";
 import { jwtSign } from "../utils/jwtToken";
+import redis from "../configs/redis";
 
 export const RegisterUser = async (
     fullname: string,
@@ -118,6 +119,45 @@ export const GetMe = async (user_id: number) => {
             updated_at: true
         }
     });
+
+    return user;
+}
+
+
+
+
+export const SearchUser = async (
+    username: string,
+    req_user: string
+) => {
+    if (!username) {
+        throw new apiError(400, "Provide username to search");
+    }
+
+    const cache = await redis.get(`user:${username}`); // Check cache first
+    if (cache) {
+        return JSON.parse(cache);
+    }
+
+    const user = await prisma.user.findFirst({
+        where: {
+            username
+        },
+        select: {
+            id: true,
+            fullname: true,
+            username: true,
+            profile_picture: true,
+            bio: true,
+            active_status: true
+        }
+    });
+
+    if (!user) {
+        throw new apiError(404, "User with this username not found");
+    }
+
+    await redis.setex(`user:${username}`, 1500, JSON.stringify(user)); // Cache for 25 minutes
 
     return user;
 }

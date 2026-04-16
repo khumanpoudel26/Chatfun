@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
 import { registerValidator } from "../validators/user.validators";
-import { GetMe, LoginUser, RegisterUser } from "../services/user.services";
+import { GetMe, LoginUser, RegisterUser, SearchUser } from "../services/user.services";
 import apiResponse from "../utils/apiResponse";
 import apiError from "../utils/apiError";
 import { ReqUser } from "../types/user.types";
@@ -68,3 +68,16 @@ export const Me = asyncHandler(async (
     const result = await GetMe(user.id);
     return apiResponse(res, 200, "User data fetched successfully", result);
 });
+
+
+
+export const FindUser = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const username = req.query.username as string;
+    const result = await SearchUser(username, (req.user as ReqUser).username);
+
+    return apiResponse(res, 200, "User info fetched successfully", result);
+}
+);
