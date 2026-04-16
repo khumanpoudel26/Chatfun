@@ -1,6 +1,9 @@
 import http from "http"
-import express from "express"
+import express, { type NextFunction, type Request, type Response } from "express"
 import dotenv from "dotenv"
+import userRoutes from "./routes/user.routes";
+import errorHandler from "./middlewares/errorHandler";
+
 
 dotenv.config({})
 
@@ -18,6 +21,10 @@ app.get('/health', (req, res) => {
         message: "Healthy"
     })
 });
+
+app.use('/api/user', userRoutes);
+app.use(errorHandler);
+
 
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

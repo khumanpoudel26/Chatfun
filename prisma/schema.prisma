@@ -17,7 +17,7 @@ enum active_stat {
 }
 
 model User {
-  id              Int         @unique @default(autoincrement())
+  id              Int         @id @default(autoincrement())
   fullname        String
   username        String      @unique
   email           String      @unique
@@ -26,4 +26,6 @@ model User {
   bio             String      @default("no bio yet")
   active_status   active_stat @default(Offline)
   email_verified  Boolean     @default(false)
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
 }
