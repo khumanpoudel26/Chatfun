@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
 import { registerValidator } from "../validators/user.validators";
-import { GetMe, LoginUser, RegisterUser, SearchUser } from "../services/user.services";
+import { GetMe, LoginUser, RegisterUser, SearchUser, SendVerification, VerifyEmailCode } from "../services/user.services";
 import apiResponse from "../utils/apiResponse";
 import apiError from "../utils/apiError";
 import { ReqUser } from "../types/user.types";
+
 
 export const Register = asyncHandler(async (
     req: Request,
@@ -81,3 +82,28 @@ export const FindUser = asyncHandler(async (
     return apiResponse(res, 200, "User info fetched successfully", result);
 }
 );
+
+
+
+export const SendEmailVerification = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const email = req.body.email as string;
+    const result = await SendVerification(email);
+
+    return apiResponse(res, 200, result.message);
+});
+
+
+
+
+export const VerifyEmail = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const { email, code } = req.body;
+    const result = await VerifyEmailCode(email, String(code));
+
+    return apiResponse(res, 200, result.message);
+});

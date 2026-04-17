@@ -4,6 +4,9 @@ import { CompareHash, GenerateHash } from "../utils/hash";
 import apiError from "../utils/apiError";
 import { jwtSign } from "../utils/jwtToken";
 import redis from "../configs/redis";
+import { Resend } from "resend";
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 export const RegisterUser = async (
     fullname: string,
@@ -160,4 +163,72 @@ export const SearchUser = async (
     await redis.setex(`user:${username}`, 1500, JSON.stringify(user)); // Cache for 25 minutes
 
     return user;
+}
+
+
+export const SendVerification = async (
+    email: string
+) => {
+
+    if (!email) {
+        throw new apiError(400, "Provide email to send verification code");
+    }
+
+
+    const user = await prisma.user.findUnique({
+        where: {
+            email
+        }
+    });
+
+    if (!user) {
+        throw new apiError(404, "User with this email not found");
+    }
+
+    if (user.email_verified) {
+        throw new apiError(400, "Email is already verified");
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6 digit code
+    await redis.setex(`verify:${email}`, 1800, code); // Store code in Redis for 30 minutes
+
+    await resend.emails.send({
+        from: process.env.EMAIL as string,
+        to: user.email,
+        subject: "Email Verification for Chatfun",
+        html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code will expire in 30 minutes.</p>`
+    });
+
+    return { message: "Verification code sent to email" };
+
+}
+
+
+
+export const VerifyEmailCode = async (
+    email: string,
+    code: string
+) => {
+
+    if (!email || !code) {
+        throw new apiError(400, "Email or code should not be empty");
+    }
+
+    const storedCode = await redis.get(`verify:${email}`);
+
+    if (!storedCode || code !== storedCode) {
+        throw new apiError(400, "Verification code expired or invalid");
+    }
+
+    await redis.del(`verify:${email}`); // Delete code from Redis after successful verification
+    await prisma.user.update({
+        where: {
+            email
+        },
+        data: {
+            email_verified: true
+        }
+    });
+
+    return { message: "Email verified successfully" };
 }

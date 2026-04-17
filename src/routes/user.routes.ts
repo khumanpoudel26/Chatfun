@@ -12,4 +12,6 @@ userRoutes.post('/login', rateLimiter(20, 160), user.Login);
 userRoutes.post('/logout', user.Logout);
 userRoutes.get('/me', isAuthenticated, user.Me);
 userRoutes.get('/find', isAuthenticated, user.FindUser);
+userRoutes.post('/send-verification', rateLimiter(10, 160),user.SendEmailVerification);
+userRoutes.post('/verify-email', rateLimiter(20, 90),user.VerifyEmail);
 export default userRoutes;
