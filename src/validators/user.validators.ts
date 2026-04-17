@@ -22,3 +22,9 @@ export const registerValidator = z.object({
         .regex(/[0-9]/, "Must contain a number")
 },err.Empty_body);
 
+
+export const resetPasswordValidator = z.object({
+    email: z.string(err.Empty_email).email(err.Invalid_email),
+    code: z.number().min(1, "Code shouldn't be empty"),
+    new_password: z.string(err.Empty_password).min(6, err.Short_password)
+});

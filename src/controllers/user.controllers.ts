@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
-import { registerValidator } from "../validators/user.validators";
-import { GetMe, LoginUser, RegisterUser, SearchUser, SendVerification, VerifyEmailCode } from "../services/user.services";
+import { registerValidator, resetPasswordValidator } from "../validators/user.validators";
+import { GetMe, LoginUser, RegisterUser, ResetNewPassword, SearchUser, SendPasswordReset, SendVerification, VerifyEmailCode } from "../services/user.services";
 import apiResponse from "../utils/apiResponse";
 import apiError from "../utils/apiError";
 import { ReqUser } from "../types/user.types";
@@ -107,3 +107,30 @@ export const VerifyEmail = asyncHandler(async (
 
     return apiResponse(res, 200, result.message);
 });
+
+
+
+export const ForgetPassword = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const email = req.body.email as string;
+    const result = await SendPasswordReset(email);
+
+    return apiResponse(res, 200, result.message);
+}
+);
+
+
+
+export const ResetPassword = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+
+    const { email, code, new_password } = resetPasswordValidator.parse(req.body);
+    const result = await ResetNewPassword(email, String(code), new_password);
+
+    return apiResponse(res, 200, result.message);
+}
+);

@@ -14,4 +14,6 @@ userRoutes.get('/me', isAuthenticated, user.Me);
 userRoutes.get('/find', isAuthenticated, user.FindUser);
 userRoutes.post('/send-verification', rateLimiter(10, 160),user.SendEmailVerification);
 userRoutes.post('/verify-email', rateLimiter(20, 90),user.VerifyEmail);
+userRoutes.post('/forgot-password', rateLimiter(10, 160), user.ForgetPassword);
+userRoutes.post('/reset-password', rateLimiter(20, 90), user.ResetPassword);
 export default userRoutes;

@@ -232,3 +232,68 @@ export const VerifyEmailCode = async (
 
     return { message: "Email verified successfully" };
 }
+
+
+
+
+
+export const SendPasswordReset = async (
+    email: string
+) => {
+
+    if (!email) {
+        throw new apiError(400, "Provide email to send password reset code");
+    }
+
+    const user = await prisma.user.findUnique({
+        where: {
+            email
+        }
+    });
+
+    if (!user) {
+        throw new apiError(404, "User with this email not found");
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6 digit code
+    await redis.setex(`resetPass:${email}`, 1800, code); // Store code in Redis for 30 minutes
+    await resend.emails.send({
+        from: process.env.EMAIL as string,
+        to: user.email,
+        subject: "Password Reset for Chatfun",
+        html: `<p>Your password reset code is: <strong>${code}</strong></p><p>This code will expire in 30 minutes.</p>`
+    });
+
+    return { message: "Password reset code has been sent to email" };
+}
+
+
+
+
+export const ResetNewPassword = async (
+    email: string,
+    code: string,
+    new_password: string
+) => {
+
+    const storedCode = await redis.get(`resetPass:${email}`);
+    if (!storedCode || code !== storedCode) {
+        throw new apiError(400, "Password reset code expired or invalid");
+    }
+
+    const hash = await GenerateHash(new_password);
+    await prisma.user.update({
+        where: {
+            email
+        },
+        data: {
+            password: hash
+        }
+    });
+    await redis.del(`resetPass:${email}`) // Delete code from Redis after successful password reset
+
+
+    return { message: "Password has been reset successfully" }
+
+
+}
