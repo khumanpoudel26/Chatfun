@@ -17,15 +17,31 @@ enum active_stat {
 }
 
 model User {
-  id              Int         @id @default(autoincrement())
-  fullname        String
-  username        String      @unique
-  email           String      @unique
-  password        String
-  profile_picture String?
-  bio             String      @default("no bio yet")
-  active_status   active_stat @default(Offline)
-  email_verified  Boolean     @default(false)
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+  id               Int         @id @default(autoincrement())
+  fullname         String
+  username         String      @unique
+  email            String      @unique
+  password         String
+  profile_picture  String?
+  bio              String      @default("no bio yet")
+  active_status    active_stat @default(Offline)
+  email_verified   Boolean     @default(false)
+  sentMessages     Message[]   @relation("SentMessages")
+  recievedMessages Message[]   @relation("ReceivedMessages")
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  text        String?
+  attachment  String?
+  is_read     Boolean  @default(false)
+  is_edited   Boolean  @default(false)
+  is_deleted  Boolean  @default(false)
+  sender_id   Int
+  receiver_id Int?
+  sent_at     DateTime @default(now())
+  sender      User     @relation("SentMessages", fields: [sender_id], references: [id])
+  receiver    User?    @relation("ReceivedMessages", fields: [receiver_id], references: [id])
 }

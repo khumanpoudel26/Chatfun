@@ -30,9 +30,6 @@ export const Login = asyncHandler(async (
     req: Request,
     res: Response
 ) => {
-    if (!req.body) {
-        throw new apiError(400, "Provide valid body data");
-    }
     const { email, password } = req.body;
     const result = await LoginUser(email, password);
 
