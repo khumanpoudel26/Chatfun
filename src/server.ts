@@ -4,6 +4,7 @@ import dotenv from "dotenv"
 import userRoutes from "./routes/user.routes";
 import errorHandler from "./middlewares/errorHandler";
 import emptyBody from "./middlewares/emptyBody";
+import chatRoutes from "./routes/chat.routes";
 
 
 dotenv.config({})
@@ -11,9 +12,9 @@ dotenv.config({})
 const app = express();
 const server = http.createServer(app);
 
-app.use(express.json());
-app.use(emptyBody); // Middleware to check for empty body in POST, PUT, PATCH, DELETE requests
-
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
+//app.use(emptyBody); // Middleware to check for empty body in POST, PUT, PATCH, DELETE requests
 const PORT = process.env.PORT || 8081
 
 app.get('/health', (req, res) => {
@@ -24,7 +25,9 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/user', userRoutes);
+app.use('/api/chat',chatRoutes);
 app.use(errorHandler);
+
 
 
 server.listen(PORT, () => {

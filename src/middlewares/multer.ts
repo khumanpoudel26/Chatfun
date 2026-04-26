@@ -17,3 +17,11 @@ export const uploadProfile = multer({
         }
     }
 });
+
+
+export const uploadFile = multer({
+    storage,
+    limits: {
+        fileSize: 200 * 1024 * 1024  // 200MB
+    }
+});

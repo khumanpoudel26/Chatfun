@@ -6,16 +6,19 @@ const emptyBody = (
     res: Response,
     next: NextFunction
 ) => {
-    if (req.method === "POST" ||
-        req.method === "PUT" ||
-        req.method === "PATCH" ||
-        req.method === "DELETE") {
-        if (!req.body){
-            throw new apiError(400, "Provide valid body data"); 
+    const methodsThatRequireBody = ["POST", "PUT", "PATCH", "DELETE"];
+    
+    if (methodsThatRequireBody.includes(req.method)) {
+        // Check if body is empty object
+        const isEmpty = !req.body || 
+                       Object.keys(req.body).length === 0 || 
+                       (req.body.constructor === Object && Object.keys(req.body).length === 0);
+        
+        if (isEmpty) {
+            throw new apiError(400, "Request body cannot be empty");
         }
-
-        next();
     }
+    
     next();
 }
 
