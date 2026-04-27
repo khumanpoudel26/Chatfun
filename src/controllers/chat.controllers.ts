@@ -11,7 +11,7 @@ export const CreateChat = asyncHandler(async (
     res: Response
 ) => {
     const user_id = req.body.user_id
-    const result = await GenerateChat(user_id, (req.user as ReqUser).id);
+    const result = await GenerateChat(Number(user_id), (req.user as ReqUser).id);
     apiResponse(res, 201, "Chat created successfully", result);
 });
 
@@ -22,7 +22,7 @@ export const CreateGroupChat = asyncHandler(async (
     res: Response
 ) => {
     const group_name = req.body.group_name;
-    const result = await GenerateGroupChat(group_name, (req.user as ReqUser).id);
+    const result = await GenerateGroupChat(String(group_name), (req.user as ReqUser).id);
     apiResponse(res, 201, "Group chat created successfully", result);
 });
 
@@ -78,7 +78,7 @@ export const EditMessage = asyncHandler(async (
     res: Response
 ) => {
     const { message_id, text } = req.body;
-    const result = await UpdateMessage(message_id, text, (req.user as ReqUser).id);
+    const result = await UpdateMessage(Number(message_id), String(text), (req.user as ReqUser).id);
     return apiResponse(res, 200, "Message edited successfully", result);
 }
 );
