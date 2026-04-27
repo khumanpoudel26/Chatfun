@@ -57,6 +57,7 @@ model Message {
   id         Int      @id @default(autoincrement())
   text       String?
   attachment String?
+  reply_to   String?
   is_read    Boolean  @default(false)
   reads      Read[]
   is_edited  Boolean  @default(false)
