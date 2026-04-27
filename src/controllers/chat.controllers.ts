@@ -44,7 +44,12 @@ export const SendMessage = asyncHandler(async (
 ) => {
     const { message, chat_id } = req.body;
     const attachment = req?.file
-    const result = await CreateMessage(Number(chat_id), (req.user as ReqUser).id, message, attachment?.buffer);
+    const result = await CreateMessage(
+        Number(chat_id), (req.user as ReqUser).id,
+        message,
+        attachment?.buffer,
+        Number(req.body?.reply_id)
+    );
     return apiResponse(res, 201, "Message sent successfully", result);
 });
 

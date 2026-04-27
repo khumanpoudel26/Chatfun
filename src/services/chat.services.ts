@@ -3,7 +3,7 @@ import { prisma } from "../configs/client"
 import redis from "../configs/redis"
 import apiError from "../utils/apiError"
 import { uploadCloud } from "../utils/uploadCloud"
-import e from "express"
+
 
 
 
@@ -182,7 +182,8 @@ export const CreateMessage = async (
     chat_id: number,
     req_user: number,
     message?: string,
-    attachment?: Buffer
+    attachment?: Buffer,
+    reply_id?: number
 ) => {
     if (!message && !attachment) {
         throw new apiError(400, "Provide message or attachment to send")
@@ -200,6 +201,16 @@ export const CreateMessage = async (
                 select: {
                     user_id: true
                 }
+            },
+            messages: {
+                where: {
+                    id: reply_id || undefined
+                },
+                select: {
+                    id: true,
+                    text: true
+                },
+                take: 1
             }
         }
     });
@@ -209,13 +220,12 @@ export const CreateMessage = async (
     if (!chat.members.some(m => m.user_id === req_user)) {
         throw new apiError(403, "Forbidden");
     }
-
-
     const data: {
         sender_id: number,
         chat_id: number
         text?: string
         attachment?: string
+        reply_to?: string
     } = {
         sender_id: req_user,
         chat_id,
@@ -225,13 +235,16 @@ export const CreateMessage = async (
         const url = await uploadCloud(attachment, "chatfun/medias");
         data.attachment = url
     }
-
+    if (reply_id) {
+        if (chat.messages.length > 0) data.reply_to = chat.messages[0].text || undefined
+    }
     const msg = await prisma.message.create({
         data: {
             sender_id: data.sender_id,
             chat_id: data.chat_id,
             text: data.text,
             attachment: data.attachment,
+            reply_to: data.reply_to,
             reads: {
                 create: {
                     user_id: req_user
@@ -296,6 +309,7 @@ export const GetConversation = async (
                     id: true,
                     text: true,
                     attachment: true,
+                    reply_to: true,
                     reads: {
                         select: {
                             user: {
@@ -328,6 +342,7 @@ export const GetConversation = async (
                 return {
                     ...m,
                     text: !m.is_deleted ? m.text : "Deleted message",
+                    reply_to: m.reply_to ? m.reply_to : undefined,
                     attachment: !m.is_deleted ? m.attachment : null,
                     reads: c.is_group ? m.reads.map(r => {
                         return r.user
