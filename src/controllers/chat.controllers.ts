@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
-import { CreateMessage, CreateMessageRead, GenerateChat, GenerateGroupChat, GetChatList, GetConversation } from "../services/chat.services";
+import { CreateMessage, CreateMessageRead, GenerateChat, GenerateGroupChat, GetChatList, GetConversation, UpdateMessage } from "../services/chat.services";
 import { ReqUser } from "../types/user.types";
 import apiResponse from "../utils/apiResponse";
 
@@ -68,5 +68,17 @@ export const ReadMessage = asyncHandler(async (
     const message_id = req.params.id;
     const result = await CreateMessageRead(Number(message_id), (req.user as ReqUser).id);
     return apiResponse(res, 200, result.message);
+}
+);
+
+
+
+export const EditMessage = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const { message_id, text } = req.body;
+    const result = await UpdateMessage(message_id, text, (req.user as ReqUser).id);
+    return apiResponse(res, 200, "Message edited successfully", result);
 }
 );

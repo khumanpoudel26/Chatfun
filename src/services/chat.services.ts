@@ -6,6 +6,7 @@ import { uploadCloud } from "../utils/uploadCloud"
 import e from "express"
 
 
+
 export const GenerateChat = async (
     user_id: number,
     req_user_id: number
@@ -401,4 +402,51 @@ export const CreateMessageRead = async (
         message: "Message read successfully"
     }
 
+}
+
+
+
+export const UpdateMessage = async (
+    message_id: number,
+    text: string,
+    req_user: number
+) => {
+    if (!message_id || !text) throw new apiError(400, "message_id and text is required");
+
+    const existingMessage = await prisma.message.findUnique({
+        where: {
+            id: message_id,
+            is_deleted: false
+        },
+        include: {
+            chat: {
+                select: {
+                    members: {
+                        select: {
+                            user_id: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+    if (!existingMessage) throw new apiError(404, "Message not found");
+    if (existingMessage.sender_id !== req_user) throw new apiError(403, "Forbidden");
+
+    const edit = await prisma.message.update({
+        where: {
+            id: message_id
+        },
+        data: {
+            text,
+            is_edited: true
+        }
+    });
+    await Promise.all(
+        existingMessage.chat.members.map(m => {
+            redis.del(`chatlist:${m.user_id}`);
+        })
+    );
+    await redis.del(`chat:${existingMessage.chat_id}`);
+    return edit;
 }
