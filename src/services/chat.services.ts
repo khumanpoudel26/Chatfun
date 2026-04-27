@@ -450,3 +450,47 @@ export const UpdateMessage = async (
     await redis.del(`chat:${existingMessage.chat_id}`);
     return edit;
 }
+
+
+
+export const SetDelete = async (
+    message_id: number,
+    req_user: number
+) => {
+    if (!message_id) throw new apiError(400, "message_id is required");
+
+    const existingMessage = await prisma.message.findUnique({
+        where: {
+            id: message_id,
+            is_deleted: false
+        },
+        include: {
+            chat: {
+                select: {
+                    members: {
+                        select: {
+                            user_id: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+    if (!existingMessage) throw new apiError(404, "Message not found");
+    if (existingMessage.sender_id !== req_user) throw new apiError(403, "Forbidden");
+
+    const del = await prisma.message.update({
+        where: {
+            id: message_id
+        },
+        data: { is_deleted: true }
+    });
+
+    await Promise.all(
+        existingMessage.chat.members.map(m => {
+            redis.del(`chatlist:${m.user_id}`);
+        })
+    );
+    await redis.del(`chat:${existingMessage.chat_id}`);
+    return del;
+}

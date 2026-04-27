@@ -12,4 +12,5 @@ chatRoutes.post('/send-message', isAuthenticated, uploadFile.single("attachment"
 chatRoutes.get('/:id', isAuthenticated, chat.Conversation);
 chatRoutes.patch('/read-message/:id', isAuthenticated, chat.ReadMessage);
 chatRoutes.patch('/edit-message',isAuthenticated, chat.EditMessage);
+chatRoutes.delete('/delete-message',isAuthenticated,chat.DeleteMessage);
 export default chatRoutes;
