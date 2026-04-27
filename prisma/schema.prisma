@@ -42,10 +42,16 @@ model Chat {
   members    Member[]
 }
 
+enum Role {
+  MEMBER
+  ADMIN
+}
+
 model Member {
   id        Int      @id @default(autoincrement())
   chat_id   Int
   user_id   Int
+  role      Role     @default(MEMBER)
   joined_at DateTime @default(now())
   member    User     @relation(fields: [user_id], references: [id])
   chat      Chat     @relation(fields: [chat_id], references: [id])
