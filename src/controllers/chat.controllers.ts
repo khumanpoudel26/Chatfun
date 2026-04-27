@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
-import { CreateMessage, CreateMessageRead, GenerateChat, GenerateGroupChat, GetChatList, GetConversation, SetDelete, UpdateMessage } from "../services/chat.services";
+import { CreateMessage, CreateMessageRead, GenerateChat, GenerateGroupChat, GetChatList, GetConversation, InsertMember, SetDelete, UpdateMessage } from "../services/chat.services";
 import { ReqUser } from "../types/user.types";
 import apiResponse from "../utils/apiResponse";
 
@@ -97,5 +97,17 @@ export const DeleteMessage = asyncHandler(async (
     const message_id = req.body.message_id;
     const result = await SetDelete(Number(message_id), (req.user as ReqUser).id);
     return apiResponse(res, 200, "Message deleted successfully", result);
+}
+);
+
+
+
+export const AddMember = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const { username, chat_id } = req.body
+    const result = await InsertMember(username, Number(chat_id), (req.user as ReqUser).id);
+    return apiResponse(res, 200, result.message);
 }
 );

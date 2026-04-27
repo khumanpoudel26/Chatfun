@@ -3,6 +3,7 @@ import { prisma } from "../configs/client"
 import redis from "../configs/redis"
 import apiError from "../utils/apiError"
 import { uploadCloud } from "../utils/uploadCloud"
+import { Role } from "@prisma/client"
 
 
 
@@ -89,7 +90,8 @@ export const GenerateGroupChat = async (
             is_group: true,
             members: {
                 create: {
-                    user_id: req_user
+                    user_id: req_user,
+                    role: Role.ADMIN
                 }
             }
         }
@@ -508,4 +510,52 @@ export const SetDelete = async (
     );
     await redis.del(`chat:${existingMessage.chat_id}`);
     return del;
+}
+
+
+
+
+export const InsertMember = async (
+    username: string,
+    chat_id: number,
+    req_user: number
+) => {
+    if (!username || !chat_id) throw new apiError(400, "username and chat_id is required");
+    const existingUser = await prisma.user.findUnique({
+        where: {
+            username
+        }
+    });
+    if (!existingUser) throw new apiError(404, "User with this username not found");
+
+    const existingGroup = await prisma.chat.findUnique({
+        where: {
+            id: chat_id,
+            is_group: true
+        },
+        include: {
+            members: {
+                select: {
+                    user_id: true,
+                    role: true
+                }
+            }
+        }
+    });
+    if (!existingGroup) throw new apiError(404, "Groupchat with the given id not found");
+    if (!existingGroup.members.some(m => m.user_id === req_user && m.role === Role.ADMIN)) throw new apiError(403, "Forbidden");
+    if (existingGroup.members.some(m => m.user_id === existingUser.id)) throw new apiError(400, "User already exists in group");
+    
+
+    await prisma.member.create({
+        data: {
+            chat_id,
+            user_id: existingUser.id
+        }
+    });
+    await redis.del(`chat:${chat_id}`);
+
+    return {
+        message: `${existingUser.username} added to groupchat`
+    }
 }
