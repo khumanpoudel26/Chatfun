@@ -14,4 +14,6 @@ chatRoutes.patch('/read-message/:id', isAuthenticated, chat.ReadMessage);
 chatRoutes.patch('/edit-message',isAuthenticated, chat.EditMessage);
 chatRoutes.delete('/delete-message',isAuthenticated,chat.DeleteMessage);
 chatRoutes.post('/group/add-member', isAuthenticated, chat.AddMember);
+chatRoutes.delete('/group/leave', isAuthenticated, chat.LeaveGroupChat);
+chatRoutes.delete('/group/remove-member', isAuthenticated, chat.RemoveMember);
 export default chatRoutes;

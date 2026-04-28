@@ -542,10 +542,11 @@ export const InsertMember = async (
             }
         }
     });
-    if (!existingGroup) throw new apiError(404, "Groupchat with the given id not found");
+    if (!existingGroup) throw new apiError(404, "Groupchat not found");
+    if (!existingGroup.members.some(m => m.user_id === req_user)) throw new apiError(404, "Groupchat not found");
     if (!existingGroup.members.some(m => m.user_id === req_user && m.role === Role.ADMIN)) throw new apiError(403, "Forbidden");
     if (existingGroup.members.some(m => m.user_id === existingUser.id)) throw new apiError(400, "User already exists in group");
-    
+
 
     await prisma.member.create({
         data: {
@@ -557,5 +558,96 @@ export const InsertMember = async (
 
     return {
         message: `${existingUser.username} added to groupchat`
+    }
+}
+
+
+
+export const LeaveGroup = async (
+    group_id: number,
+    req_user: number
+) => {
+    if (!group_id) throw new apiError(400, "group_id is required");
+
+    const group = await prisma.chat.findUnique({
+        where: {
+            is_group: true,
+            id: group_id
+        },
+        include: {
+            members: {
+                select: {
+                    user_id: true
+                }
+            }
+        }
+    });
+    if (!group) throw new apiError(404, "Groupchat not found");
+    if (!group.members.some(m => m.user_id === req_user)) throw new apiError(404, "Groupchat not found");
+
+    await prisma.member.delete({
+        where: {
+            chat_id_user_id: {
+                chat_id: group_id,
+                user_id: req_user
+            }
+        }
+    });
+    await Promise.all(
+        group.members.map(m => {
+            redis.del(`chatlist:${m.user_id}`);
+        })
+    );
+    await redis.del(`chat:${group_id}`);
+
+    return {
+        message: "Chatgroup leave successfully"
+    }
+
+}
+
+
+
+export const DeleteMember = async (
+    group_id: number,
+    member_user_id: number,
+    req_user: number
+) => {
+    if (!group_id || !member_user_id) throw new apiError(400, "group_id and member_user_id is required");
+
+    const existingGroup = await prisma.chat.findUnique({
+        where: {
+             is_group: true,
+            id: group_id 
+        },
+        select: {
+            members: {
+                select: {
+                    user_id: true,
+                    role: true
+                }
+            }
+        }
+    });
+
+    if (!existingGroup) {
+        throw new apiError(404, "Groupchat not found");
+    }
+    if (!existingGroup.members.some(m => m.user_id === req_user)) throw new apiError(404, "Groupchat not found");
+    if (!existingGroup.members.some(m =>  m.user_id === req_user && m.role === Role.ADMIN)) throw new apiError(403, "Forbidden");
+    if (!existingGroup.members.some(m => m.user_id === member_user_id)) throw new apiError(404, "Member doesn't exists on groupchat");
+
+    await prisma.member.delete({
+        where: {
+            chat_id_user_id: {
+                chat_id: group_id,
+                user_id: member_user_id
+            }
+        }
+    });
+    await redis.del(`chat:${group_id}`);
+
+    return {
+        message: `Member removed from groupchat`
     }
 }
