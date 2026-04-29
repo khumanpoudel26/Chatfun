@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
-import { CreateMessage, CreateMessageRead, DeleteMember, GenerateChat, GenerateGroupChat, GetChatList, GetConversation, InsertMember, LeaveGroup, SetDelete, UpdateMessage } from "../services/chat.services";
+import { CreateMessage, CreateMessageRead, DeleteMember, GenerateChat, GenerateGroupChat, GetChatList, GetConversation, GetMembers, InsertMember, LeaveGroup, SetDelete, UpdateMessage } from "../services/chat.services";
 import { ReqUser } from "../types/user.types";
 import apiResponse from "../utils/apiResponse";
 
@@ -72,7 +72,7 @@ export const ReadMessage = asyncHandler(async (
 ) => {
     const message_id = req.params.id;
     const result = await CreateMessageRead(Number(message_id), (req.user as ReqUser).id);
-    return apiResponse(res, 204, result.message);
+    return apiResponse(res, 200, result.message);
 }
 );
 
@@ -96,7 +96,7 @@ export const DeleteMessage = asyncHandler(async (
 ) => {
     const message_id = req.body.message_id;
     const result = await SetDelete(Number(message_id), (req.user as ReqUser).id);
-    return apiResponse(res, 204, "Message deleted successfully", result);
+    return apiResponse(res, 200, "Message deleted successfully", result);
 }
 );
 
@@ -119,7 +119,7 @@ export const LeaveGroupChat = asyncHandler(async (
 ) => {
     const group_id = req.body.group_id;
     const result = await LeaveGroup(Number(group_id), (req.user as ReqUser).id);
-    return apiResponse(res, 204, result.message);
+    return apiResponse(res, 200, result.message);
 }
 );
 
@@ -131,6 +131,17 @@ export const RemoveMember = asyncHandler(async (
 ) => {
     const { group_id, member_user_id } = req.body;
     const result = await DeleteMember(Number(group_id), Number(member_user_id), (req.user as ReqUser).id);
-    return apiResponse(res, 204, result.message);
+    return apiResponse(res, 200, result.message);
+}
+);
+
+
+export const GroupMembers = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const group_id = req.query.group_id;
+    const result = await GetMembers(Number(group_id), (req.user as ReqUser).id);
+    return apiResponse(res, 200, "Members fetched successfully", result);
 }
 );

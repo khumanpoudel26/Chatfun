@@ -651,3 +651,41 @@ export const DeleteMember = async (
         message: `Member removed from groupchat`
     }
 }
+
+
+
+export const GetMembers = async(
+    group_id: number,
+    req_user: number
+) =>{
+    if(!group_id) throw new apiError(400, "group_id is required");
+
+    const existingGroup = await prisma.chat.findUnique({
+        where:{
+            is_group: true,
+            id: group_id
+        },
+        select:{
+            members:{
+                select:{
+                    member:{
+                        select:{
+                            id: true,
+                            fullname: true,
+                            username: true,
+                            profile_picture: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+    if(!existingGroup) throw new apiError(404, "Groupchat not found");
+    if(!existingGroup.members.some(m => m.member.id === req_user)){
+        throw new apiError(404,"Groupchat not found")
+    }
+
+    return existingGroup.members.map(m => {
+        return m.member
+    });
+}
