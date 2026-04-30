@@ -4,6 +4,7 @@ import redis from "../configs/redis"
 import apiError from "../utils/apiError"
 import { uploadCloud } from "../utils/uploadCloud"
 import { Role } from "@prisma/client"
+import { io } from "../server"
 
 
 
@@ -261,6 +262,8 @@ export const CreateMessage = async (
         })
     );
     await redis.del(`chat:${chat_id}`);
+
+    io.to(String(chat_id)).emit('receive_message', msg);
     return msg;
 }
 
@@ -415,9 +418,11 @@ export const CreateMessageRead = async (
     );
     await redis.del(`chat:${existingMessage.chat_id}`);
 
+    io.to(String(existingMessage.chat_id)).emit('receive_read_message', existingMessage);
     return {
         message: "Message read successfully"
     }
+
 
 }
 
@@ -465,6 +470,8 @@ export const UpdateMessage = async (
         })
     );
     await redis.del(`chat:${existingMessage.chat_id}`);
+
+    io.to(String(existingMessage.chat_id)).emit('receive_edited_message', edit);
     return edit;
 }
 
@@ -509,6 +516,12 @@ export const SetDelete = async (
         })
     );
     await redis.del(`chat:${existingMessage.chat_id}`);
+
+    io.to(String(existingMessage.chat_id)).emit('receive_deleted_message', {
+        ...del,
+        text: "Deleted message",
+        attachment: null
+    });
     return del;
 }
 
@@ -617,8 +630,8 @@ export const DeleteMember = async (
 
     const existingGroup = await prisma.chat.findUnique({
         where: {
-             is_group: true,
-            id: group_id 
+            is_group: true,
+            id: group_id
         },
         select: {
             members: {
@@ -634,7 +647,7 @@ export const DeleteMember = async (
         throw new apiError(404, "Groupchat not found");
     }
     if (!existingGroup.members.some(m => m.user_id === req_user)) throw new apiError(404, "Groupchat not found");
-    if (!existingGroup.members.some(m =>  m.user_id === req_user && m.role === Role.ADMIN)) throw new apiError(403, "Forbidden");
+    if (!existingGroup.members.some(m => m.user_id === req_user && m.role === Role.ADMIN)) throw new apiError(403, "Forbidden");
     if (!existingGroup.members.some(m => m.user_id === member_user_id)) throw new apiError(404, "Member doesn't exists on groupchat");
 
     await prisma.member.delete({
@@ -654,22 +667,22 @@ export const DeleteMember = async (
 
 
 
-export const GetMembers = async(
+export const GetMembers = async (
     group_id: number,
     req_user: number
-) =>{
-    if(!group_id) throw new apiError(400, "group_id is required");
+) => {
+    if (!group_id) throw new apiError(400, "group_id is required");
 
     const existingGroup = await prisma.chat.findUnique({
-        where:{
+        where: {
             is_group: true,
             id: group_id
         },
-        select:{
-            members:{
-                select:{
-                    member:{
-                        select:{
+        select: {
+            members: {
+                select: {
+                    member: {
+                        select: {
                             id: true,
                             fullname: true,
                             username: true,
@@ -680,9 +693,9 @@ export const GetMembers = async(
             }
         }
     });
-    if(!existingGroup) throw new apiError(404, "Groupchat not found");
-    if(!existingGroup.members.some(m => m.member.id === req_user)){
-        throw new apiError(404,"Groupchat not found")
+    if (!existingGroup) throw new apiError(404, "Groupchat not found");
+    if (!existingGroup.members.some(m => m.member.id === req_user)) {
+        throw new apiError(404, "Groupchat not found")
     }
 
     return existingGroup.members.map(m => {
