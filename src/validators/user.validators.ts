@@ -8,7 +8,10 @@ const err = {
     Empty_email: "Email shouldn't be empty",
     Invalid_email: "Provide valid email address",
     Empty_password: "Password shouldn't be empty",
+    Empty_new_password: "New password shouldn't be empty",
+    Short_new_password: "New password should be atleast 6 characters long",
     Short_password: "Password should be atleast 6 characters long",
+    empty_bio: "Bio shouldn't be empty",
     Empty_body: "Provide valid body data"
 }
 
@@ -20,11 +23,23 @@ export const registerValidator = z.object({
         .regex(/[A-Z]/, "Must contain uppercase letter")
         .regex(/[a-z]/, "Must contain lowercase letter")
         .regex(/[0-9]/, "Must contain a number")
-},err.Empty_body);
+}, err.Empty_body);
 
 
 export const resetPasswordValidator = z.object({
     email: z.string(err.Empty_email).email(err.Invalid_email),
     code: z.number().min(1, "Code shouldn't be empty"),
-    new_password: z.string(err.Empty_password).min(6, err.Short_password)
-});
+    new_password: z.string(err.Empty_new_password).min(6, err.Short_new_password)
+        .regex(/[A-Z]/, "Must contain uppercase letter")
+        .regex(/[a-z]/, "Must contain lowercase letter")
+        .regex(/[0-9]/, "Must contain a number")
+},err.Empty_body);
+
+
+export const changePasswordValidator = z.object({
+    password: z.string(err.Empty_password),
+    new_password: z.string(err.Empty_new_password).min(6, err.Short_new_password)
+        .regex(/[A-Z]/, "Must contain uppercase letter")
+        .regex(/[a-z]/, "Must contain lowercase letter")
+        .regex(/[0-9]/, "Must contain a number")
+},err.Empty_body);

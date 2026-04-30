@@ -105,6 +105,10 @@ export const LoginUser = async (
 
 
 export const GetMe = async (user_id: number) => {
+
+    const cache = await redis.get(`pii:${user_id}`);
+    if (cache) return JSON.parse(cache);
+
     const user = await prisma.user.findUnique({
         where: {
             id: user_id
@@ -122,7 +126,7 @@ export const GetMe = async (user_id: number) => {
             updated_at: true
         }
     });
-
+    await redis.setex(`pii:${user_id}`, 600, JSON.stringify(user)); // Cache for 10 minutes
     return user;
 }
 
@@ -294,6 +298,103 @@ export const ResetNewPassword = async (
 
 
     return { message: "Password has been reset successfully" }
+}
 
 
+
+
+
+export const UpdateUserInfo = async (
+    req_user: number,
+    fullname?: string,
+    username?: string,
+    file?: Buffer,
+    bio?: string
+) => {
+    if (!fullname && !username && file && bio) throw new apiError(400, "Provide atleast one field to change");
+
+    const data: {
+        fullname?: string,
+        username?: string,
+        profile_picture?: string,
+        bio?: string
+    } = {};
+
+    if (fullname) data.fullname = fullname;
+    if (username) {
+        const existingUsername = await prisma.user.findUnique({
+            where: {
+                username
+            }
+        });
+        if (existingUsername) throw new apiError(400, "Username already exists");
+        data.username = username;
+    }
+    if (file) {
+        const url = await uploadCloud(file, 'chatfun/profiles');
+        data.profile_picture = url;
+    }
+    if (bio) data.bio = bio;
+
+    const update = await prisma.user.update({
+        where: { id: req_user },
+        data: data,
+        select: {
+            id: true,
+            fullname: true,
+            username: true,
+            email: true,
+            profile_picture: true,
+            email_verified: true,
+            bio: true,
+            updated_at: true
+        }
+    });
+
+    await redis.del(`pii:${req_user}`);
+    await redis.del(`user:${update.username}`);
+
+    const updatedToken = await jwtSign({
+        id: update.id,
+        email: update.email,
+        fullname: update.fullname,
+        username: update.username,
+        email_verified: update.email_verified
+    }, "12d");
+    return {
+        ...update,
+        login_token: updatedToken
+    };
+}
+
+
+
+export const UpdatePassword = async (
+    password: string,
+    new_password: string,
+    req_user: number
+) => {
+    const user = await prisma.user.findUnique({
+        where: {
+            id: req_user
+        }
+    });
+    if (!user) throw Error("Internal server error, try later");
+
+    const validPassword = await CompareHash(password, user.password);
+    if (!validPassword) throw new apiError(400, "Invalid Password");
+
+    const hash = await GenerateHash(new_password);
+    await prisma.user.update({
+        where: {
+            id: req_user
+        },
+        data: {
+            password: hash
+        }
+    });
+
+    return {
+        message: "Password changed successfully"
+    }
 }

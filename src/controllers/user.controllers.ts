@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler";
-import { registerValidator, resetPasswordValidator } from "../validators/user.validators";
-import { GetMe, LoginUser, RegisterUser, ResetNewPassword, SearchUser, SendPasswordReset, SendVerification, VerifyEmailCode } from "../services/user.services";
+import { changePasswordValidator, registerValidator, resetPasswordValidator } from "../validators/user.validators";
+import { GetMe, LoginUser, RegisterUser, ResetNewPassword, SearchUser, SendPasswordReset, SendVerification, UpdatePassword, UpdateUserInfo, VerifyEmailCode } from "../services/user.services";
 import apiResponse from "../utils/apiResponse";
 import apiError from "../utils/apiError";
 import { ReqUser } from "../types/user.types";
@@ -36,7 +36,7 @@ export const Login = asyncHandler(async (
     res.cookie("login_token", result.login_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "prod",
-        sameSite: "strict",
+        //sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -127,7 +127,39 @@ export const ResetPassword = asyncHandler(async (
 
     const { email, code, new_password } = resetPasswordValidator.parse(req.body);
     const result = await ResetNewPassword(email, String(code), new_password);
+    return apiResponse(res, 200, result.message);
+}
+);
 
+
+
+export const UpdateProfile = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const { fullname, username, bio } = req.body
+    const file = req?.file?.buffer
+
+    const result = await UpdateUserInfo((req.user as ReqUser).id, fullname, username, file, bio)
+
+    res.cookie("login_token", result.login_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "prod",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    return apiResponse(res, 200, "Profile updated successfully", result)
+}
+);
+
+
+
+export const ChangePassword = asyncHandler(async (
+    req: Request,
+    res: Response
+) => {
+    const { password, new_password } = changePasswordValidator.parse(req.body);
+    const result = await UpdatePassword(password, new_password, (req.user as ReqUser).id);
     return apiResponse(res, 200, result.message);
 }
 );

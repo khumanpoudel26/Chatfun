@@ -12,7 +12,7 @@ export const isAuthenticated = asyncHandler(async (
 ) => {
     const token =
         req.headers?.authorization?.split(" ")[1] ||
-        req.headers?.cookie?.split(";").find(c => c.trim().startsWith("login_token="))?.split("=")[1]
+        req.headers?.cookie?.split(";").find(c => c.trim().startsWith("login_token="))?.split("=")[1];
 
     if (!token) {
         throw new apiError(
@@ -22,7 +22,8 @@ export const isAuthenticated = asyncHandler(async (
     }
 
     const decoded: ReqUser = await jwtVerify(token);
-
+    if(!decoded.email_verified) throw new apiError(401, "Email is not verified");
+    
     req.user = decoded
 
     next();
