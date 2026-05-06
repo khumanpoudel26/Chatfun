@@ -52,7 +52,7 @@ export const Logout = asyncHandler(async (
     res.clearCookie("login_token", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "prod",
-        sameSite: "strict"
+        sameSite: "none"
     });
     return apiResponse(res, 200, "Logged out successfully");
 });
@@ -145,7 +145,7 @@ export const UpdateProfile = asyncHandler(async (
     res.cookie("login_token", result.login_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "prod",
-        sameSite: "strict",
+        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     return apiResponse(res, 200, "Profile updated successfully", result)
